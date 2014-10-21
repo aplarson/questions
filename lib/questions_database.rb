@@ -67,18 +67,7 @@ class User
   end
 
   def authored_replies
-    query = <<-SQL
-      SELECT
-        *
-      FROM
-        replies
-      WHERE
-        user_id = ?
-    SQL
-    replies = QuestionsDatabase.instance.execute(query, @id)
-    replies.map do |reply|
-      Reply.new(reply)
-    end
+    Reply.find_by_user_id(@id)
   end
 
 end
@@ -119,6 +108,25 @@ class Question
     questions = QuestionsDatabase.instance.execute(query, author_id)
     questions.map do |question|
       self.new(question)
+    end
+  end
+
+  def author
+    User.find_by_id(@user_id)
+  end
+
+  def replies
+    query =  <<-SQL
+      SELECT
+        *
+      FROM
+        replies
+      WHERE
+        question_id = ?
+    SQL
+    replies = QuestionsDatabase.instance.execute(query, @id)
+    replies.map do |reply|
+      Reply.new(reply)
     end
   end
 end
@@ -169,6 +177,52 @@ class Reply
     SQL
     reply_hash = QuestionsDatabase.instance.execute(query, own_id)[0]
     self.new(reply_hash)
+  end
+
+  def self.find_by_question_id(question_id)
+    Question.find_by_id(question_id).replies
+  end
+
+  def self.find_by_user_id(user_id)
+    query = <<-SQL
+      SELECT
+        *
+      FROM
+        replies
+      WHERE
+        user_id = ?
+    SQL
+    replies = QuestionsDatabase.instance.execute(query, user_id)
+    replies.map do |reply|
+      Reply.new(reply)
+    end
+  end
+
+  def author
+    User.find_by_id(@user_id)
+  end
+
+  def question
+    Question.find_by_id(@question_id)
+  end
+
+  def parent_reply
+    Reply.find_by_id(@reply_id) unless @reply_id.nil?
+  end
+
+  def child_replies
+    query = <<-SQL
+      SELECT
+        *
+      FROM
+        replies
+      WHERE
+        reply_id = ?
+    SQL
+    replies = QuestionsDatabase.instance.execute(query, @id)
+    replies.map do |reply|
+      Reply.new(reply)
+    end
   end
 
 end

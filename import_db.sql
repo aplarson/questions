@@ -65,3 +65,7 @@ VALUES
   (SELECT id FROM users WHERE fname = 'CJ')
   );
 
+INSERT INTO
+  replies (question_id, reply_id, user_id, body)
+VALUES
+  (1, NULL, 2, "No it is very cold" );
