@@ -70,6 +70,10 @@ class User
     Reply.find_by_user_id(@id)
   end
 
+  def followed_questions
+    Follower.followed_questions_for_user_id(@id)
+  end
+
 end
 
 class Question
@@ -129,6 +133,14 @@ class Question
       Reply.new(reply)
     end
   end
+
+  def followers
+    Follower.followers_for_question_id(@id)
+  end
+
+  def self.most_followed(n)
+    Follower.most_followed_questions(n)
+  end
 end
 
 class Follower
@@ -151,6 +163,65 @@ class Follower
     SQL
     follower_hash = QuestionsDatabase.instance.execute(query, follower_id)[0]
     self.new(follower_hash)
+  end
+
+  def self.followers_for_question_id(question_id)
+    query =  <<-SQL
+      SELECT
+        users.id AS id, fname, lname
+      FROM
+        users
+      JOIN
+        followers
+      ON
+        users.id = followers.user_id
+      WHERE
+        followers.question_id = ?
+    SQL
+    users_hash = QuestionsDatabase.instance.execute(query, question_id)
+    users_hash.map do |user|
+      User.new(user)
+    end
+
+  end
+
+  def self.followed_questions_for_user_id(user_id)
+    query =  <<-SQL
+      SELECT
+      *
+      FROM
+        questions
+      JOIN
+        followers
+      ON
+        questions.id = followers.question_id
+      WHERE
+        followers.user_id = ?
+    SQL
+    questions_hash = QuestionsDatabase.instance.execute(query, user_id)
+    questions_hash.map do |question|
+      Question.new(question)
+    end
+  end
+
+  def self.most_followed_questions(n)
+    query = <<-SQL
+      SELECT
+        question_id
+      FROM
+        followers
+      GROUP BY
+        question_id
+      ORDER BY
+        COUNT(question_id) DESC
+      LIMIT
+        ?
+    SQL
+
+    question_ids = QuestionsDatabase.instance.execute(query, n)
+    question_ids.map do |id|
+      Question.find_by_id(id['question_id'])
+    end
   end
 
 end

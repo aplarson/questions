@@ -45,7 +45,7 @@ VALUES
   ('Ben','Henderson'), ('Andrew','Larson'), ('CJ', 'Avila');
 
 INSERT INTO
-questions(title, body, user_id)
+questions (title, body, user_id)
 VALUES
 ('Why is it so hot in here?', 'It is really hot in here. Why is that?',
   (SELECT id
@@ -68,4 +68,16 @@ VALUES
 INSERT INTO
   replies (question_id, reply_id, user_id, body)
 VALUES
-  (1, NULL, 2, "No it is very cold" );
+  (1, NULL, 1, 'No it is very cold' ),
+  (2, NULL, 2, 'It is sweltering in here'),
+  (1, 1, 2, 'No it is hot!'),
+  (2, 2, 1, 'I do not agree!');
+
+INSERT INTO
+ question_likes (user_id, question_id)
+VALUES
+  (3, 1),
+  (3, 2),
+  (2, 2),
+  (1, 1)
+ ;
