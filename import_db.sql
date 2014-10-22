@@ -8,7 +8,7 @@ CREATE TABLE questions (
   id INTEGER PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   body TEXT NOT NULL,
-  user_id INTEGER,
+  user_id INTEGER NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -55,15 +55,15 @@ VALUES
   (SELECT id
   FROM users
   WHERE fname = 'Ben')
-);
+),
+('Why is it so tepid in here?', 'It is really mild in temperature here!!!', 1);
 
 INSERT INTO
   followers (question_id, user_id)
 VALUES
-  (
-  (SELECT id FROM questions WHERE title = 'Why is it so hot in here?'),
-  (SELECT id FROM users WHERE fname = 'CJ')
-  );
+  (1, 3),
+  (1, 1),
+  (2, 2);
 
 INSERT INTO
   replies (question_id, reply_id, user_id, body)
