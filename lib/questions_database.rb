@@ -9,12 +9,33 @@ class DatabaseSaver
       SELECT
         *
       FROM
-        #{self.to_s.tableize}
+        #{tableize}
     SQL
     like_hashes = QuestionsDatabase.instance.execute(query)
     like_hashes.map do |like|
       self.new(like)
     end
+  end
+
+  def self.find_by_id(id)
+    query =  <<-SQL
+      SELECT
+        *
+      FROM
+        #{tableize}
+      WHERE
+        id = ?
+    SQL
+    hash = QuestionsDatabase.instance.execute(query, id)[0]
+    self.new(hash)
+  end
+
+  def self.tableize
+    self.to_s.tableize
+  end
+
+  def tableize
+    self.class.tableize
   end
 
   def save
@@ -26,35 +47,35 @@ class DatabaseSaver
   end
 
   def insert
-    i_vars = self.instance_variables
-    i_vars.delete(:@id)
-    i_var_names = i_vars.map { |i_var| (i_var.to_s)[1..-1] }
-    i_var_values = i_vars.map { |i_var| self.instance_variable_get(i_var) }
+    i_var_names, i_var_values = i_var_array
     insert_query = <<-SQL
       INSERT INTO
-        #{self.class.to_s.tableize}(#{i_var_names.join(",")})
+        #{tableize}(#{i_var_names.join(",")})
       VALUES
-      (#{(['?'] * i_vars.length).join(",")})
+      (#{(['?'] * i_var_names.length).join(",")})
     SQL
     QuestionsDatabase.instance.execute(insert_query, *i_var_values)
     @id = QuestionsDatabase.instance.last_insert_row_id
   end
 
   def update
-    i_vars = self.instance_variables
-    i_vars.delete(:@id)
-    i_var_names = i_vars.map { |i_var| (i_var.to_s)[1..-1] }
-    i_var_values = i_vars.map { |i_var| self.instance_variable_get(i_var) }
-    columns_to_set = i_var_names.map { |name| "#{name} = ?" }
+    i_var_names, i_var_values = i_var_array
     update_query = <<-SQL
       UPDATE
-        #{self.class.to_s.tableize}
+        #{tableize}
       SET
-        #{columns_to_set.join(",")}
+        #{i_var_names.map { |name| "#{name} = ?"}.join(",")}
       WHERE
         id = ?
     SQL
     QuestionsDatabase.instance.execute(update_query, *i_var_values, @id)
+  end
+
+  def i_var_array
+    i_vars = self.instance_variables - [:@id]
+    i_var_names = i_vars.map { |i_var| (i_var.to_s)[1..-1] }
+    i_var_values = i_vars.map { |i_var| self.instance_variable_get(i_var) }
+    [i_var_names, i_var_values]
   end
 
 end
@@ -79,19 +100,6 @@ class User < DatabaseSaver
     @id = options['id']
     @fname = options['fname']
     @lname = options['lname']
-  end
-
-  def self.find_by_id(user_id)
-    query =  <<-SQL
-      SELECT
-        *
-      FROM
-        users
-      WHERE
-        users.id = ?
-    SQL
-    user_hash = QuestionsDatabase.instance.execute(query, user_id)[0]
-    self.new(user_hash)
   end
 
   def self.find_by_name(fname, lname)
@@ -173,19 +181,6 @@ class Question < DatabaseSaver
     @user_id = options['user_id']
   end
 
-  def self.find_by_id(question_id)
-    query =  <<-SQL
-      SELECT
-        *
-      FROM
-        questions
-      WHERE
-        id = ?
-    SQL
-    question_hash = QuestionsDatabase.instance.execute(query, question_id)[0]
-    self.new(question_hash)
-  end
-
   def self.find_by_author_id(author_id)
     query =  <<-SQL
       SELECT
@@ -248,19 +243,6 @@ class Follower < DatabaseSaver
     @id = options['id']
     @user_id = options['user_id']
     @question_id = options['question_id']
-  end
-
-  def self.find_by_id(follower_id)
-    query =  <<-SQL
-      SELECT
-        *
-      FROM
-        followers
-      WHERE
-        id = ?
-    SQL
-    follower_hash = QuestionsDatabase.instance.execute(query, follower_id)[0]
-    self.new(follower_hash)
   end
 
   def self.followers_for_question_id(question_id)
@@ -342,19 +324,6 @@ class Reply < DatabaseSaver
     @body = options['body']
   end
 
-  def self.find_by_id(own_id)
-    query =  <<-SQL
-      SELECT
-        *
-      FROM
-        replies
-      WHERE
-        id = ?
-    SQL
-    reply_hash = QuestionsDatabase.instance.execute(query, own_id)[0]
-    self.new(reply_hash)
-  end
-
   def self.find_by_question_id(question_id)
     Question.find_by_id(question_id).replies
   end
@@ -410,20 +379,6 @@ class QuestionLike < DatabaseSaver
     @id = options['id']
     @user_id = options['user_id']
     @question_id = options['question_id']
-  end
-
-  def self.find_by_id(question_like_id)
-    query =  <<-SQL
-      SELECT
-        *
-      FROM
-        question_likes
-      WHERE
-        id = ?
-    SQL
-    question_like_hash =
-      QuestionsDatabase.instance.execute(query, question_like_id)[0]
-    self.new(question_like_hash)
   end
 
   def self.likers_for_question_id(question_id)
