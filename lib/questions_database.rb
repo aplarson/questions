@@ -11,9 +11,9 @@ class DatabaseSaver
       FROM
         #{tableize}
     SQL
-    like_hashes = QuestionsDatabase.instance.execute(query)
-    like_hashes.map do |like|
-      self.new(like)
+    hashes = QuestionsDatabase.instance.execute(query)
+    hashes.map do |hash|
+      self.new(hash)
     end
   end
 
