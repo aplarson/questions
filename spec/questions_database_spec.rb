@@ -103,14 +103,14 @@ describe Follower do
   describe "most_followed_questions" do
     it "returns the most followed questions for n=1" do
       questions = Follower.most_followed_questions(1)
-      expect(questions[0].id).to eq(1)
+      expect(questions[0].id).to eq(2)
     end
 
     it "returns the most followed questions for greater n" do
       questions = Follower.most_followed_questions(2)
       expect(questions.length).to eq(2)
-      expect(questions[0].id).to eq(1)
-      expect(questions[1].id).to eq(2)
+      expect(questions[0].id).to eq(2)
+      expect(questions[1].id).to eq(1)
     end
   end
 

@@ -1,16 +1,21 @@
 require 'sqlite3'
 require 'singleton'
 require 'debugger'
+require 'active_support/inflector'
 
 class DatabaseSaver
-
-  TABLENAME = {
-    "User" => "users",
-    "Question" => "questions",
-    "Reply" => "replies",
-    "Follower" => "followers",
-    "QuestionLike" => "question_likes"
-  }
+  def self.all
+    query = <<-SQL
+      SELECT
+        *
+      FROM
+        #{self.to_s.tableize}
+    SQL
+    like_hashes = QuestionsDatabase.instance.execute(query)
+    like_hashes.map do |like|
+      self.new(like)
+    end
+  end
 
   def save
     if @id.nil?
@@ -27,7 +32,7 @@ class DatabaseSaver
     i_var_values = i_vars.map { |i_var| self.instance_variable_get(i_var) }
     insert_query = <<-SQL
       INSERT INTO
-        #{TABLENAME[self.class.to_s]}(#{i_var_names.join(",")})
+        #{self.class.to_s.tableize}(#{i_var_names.join(",")})
       VALUES
       (#{(['?'] * i_vars.length).join(",")})
     SQL
@@ -43,7 +48,7 @@ class DatabaseSaver
     columns_to_set = i_var_names.map { |name| "#{name} = ?" }
     update_query = <<-SQL
       UPDATE
-        #{TABLENAME[self.class.to_s]}
+        #{self.class.to_s.tableize}
       SET
         #{columns_to_set.join(",")}
       WHERE
@@ -155,18 +160,6 @@ class User < DatabaseSaver
     karma = QuestionsDatabase.instance.execute(query, @id)[0]['karma']
   end
 
-  def self.all
-    query = <<-SQL
-      SELECT
-        *
-      FROM
-        users
-    SQL
-    user_hashes = QuestionsDatabase.instance.execute(query)
-    user_hashes.map do |user|
-      self.new(user)
-    end
-  end
 end
 
 class Question < DatabaseSaver
@@ -204,19 +197,6 @@ class Question < DatabaseSaver
     SQL
     questions = QuestionsDatabase.instance.execute(query, author_id)
     questions.map do |question|
-      self.new(question)
-    end
-  end
-
-  def self.all
-    query = <<-SQL
-      SELECT
-        *
-      FROM
-        questions
-    SQL
-    question_hashes = QuestionsDatabase.instance.execute(query)
-    question_hashes.map do |question|
       self.new(question)
     end
   end
@@ -349,19 +329,6 @@ class Follower < DatabaseSaver
     end
   end
 
-  def self.all
-    query = <<-SQL
-      SELECT
-        *
-      FROM
-        followers
-    SQL
-    follower_hashes = QuestionsDatabase.instance.execute(query)
-    follower_hashes.map do |follower|
-      self.new(follower)
-    end
-  end
-
 end
 
 class Reply < DatabaseSaver
@@ -404,19 +371,6 @@ class Reply < DatabaseSaver
     replies = QuestionsDatabase.instance.execute(query, user_id)
     replies.map do |reply|
       Reply.new(reply)
-    end
-  end
-
-  def self.all
-    query = <<-SQL
-      SELECT
-        *
-      FROM
-        replies
-    SQL
-    reply_hashes = QuestionsDatabase.instance.execute(query)
-    reply_hashes.map do |reply|
-      self.new(reply)
     end
   end
 
@@ -554,18 +508,4 @@ class QuestionLike < DatabaseSaver
       Question.new(question)
     end
   end
-
-  def self.all
-    query = <<-SQL
-      SELECT
-        *
-      FROM
-        question_likes
-    SQL
-    like_hashes = QuestionsDatabase.instance.execute(query)
-    like_hashes.map do |like|
-      self.new(like)
-    end
-  end
-
 end
